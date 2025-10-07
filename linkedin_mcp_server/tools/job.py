@@ -47,8 +47,16 @@ def register_job_tools(mcp: FastMCP) -> None:
                           application count, and job description (may be empty if content is protected)
         """
         try:
-            logger.info("Scraping job: %s", job_id)
-            return fetch_job_details(job_id, session_token=session_token)
+            # Construct clean LinkedIn URL from job ID
+            job_url = f"https://www.linkedin.com/jobs/view/{job_id}/"
+
+            driver = safe_get_driver(session_token=session_token)
+
+            logger.info(f"Scraping job: {job_url}")
+            job = Job(job_url, driver=driver, close_on_complete=False)
+
+            # Convert job object to a dictionary
+            return job.to_dict()
         except Exception as e:
             return handle_tool_error(e, "get_job_details")
 
@@ -66,8 +74,14 @@ def register_job_tools(mcp: FastMCP) -> None:
             List[Dict[str, Any]]: List of job search results
         """
         try:
-            logger.info("Searching jobs: %s", search_term)
-            return search_jobs(search_term, session_token=session_token)
+            driver = safe_get_driver(session_token=session_token)
+
+            logger.info(f"Searching jobs: {search_term}")
+            job_search = JobSearch(driver=driver, close_on_complete=False, scrape=False)
+            jobs = job_search.search(search_term)
+
+            # Convert job objects to dictionaries
+            return [job.to_dict() for job in jobs]
         except Exception as e:
             return handle_tool_error_list(e, "search_jobs")
 
@@ -82,6 +96,8 @@ def register_job_tools(mcp: FastMCP) -> None:
             List[Dict[str, Any]]: List of recommended jobs
         """
         try:
+            driver = safe_get_driver(session_token=session_token)
+
             logger.info("Getting recommended jobs")
             return fetch_recommended_jobs(session_token=session_token)
         except Exception as e:
