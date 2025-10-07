@@ -43,6 +43,34 @@ Suggest improvements for my CV to target this job posting https://www.linkedin.c
 > - The same LinkedIn cookie should only be active in one session at a time. If you reuse it concurrently, LinkedIn is likely to invalidate the cookie.
 > - For backward compatibility, omitting `session_token` when calling a tool will continue to use the legacy single-user configuration based on `LINKEDIN_COOKIE`.
 
+## Web companion UI
+
+Looking for a simple way to let users log in with their own LinkedIn account and talk to an agent? The project now ships with a FastAPI-powered companion app that wraps the session manager and heuristic agent described above.
+
+1. Install the project dependencies (see [Local setup](#-local-setup-develop--contribute)).
+2. Run the companion server:
+
+   ```bash
+   uv run linkedin-mcp-web
+   ```
+
+   The server starts on `http://localhost:8100` by default. Configure the bind address with `LINKEDIN_MCP_WEB_HOST` and `LINKEDIN_MCP_WEB_PORT` if needed.
+3. Open the UI in your browser. Create a session with either a `li_at` cookie or LinkedIn credentials. The browser stores the session token locally and includes it with every chat request.
+4. Ask the built-in agent for recommended jobs, paste a profile/company/job URL, or request a job search. The agent selects the right MCP helpers behind the scenes and streams the response back into the chat window.
+
+The bundled single-page app is written in React and loaded straight from the FastAPI server (no build step required). The UI keeps each session token in the browser, supports both cookie and credential sign-in, and streams chat updates in real time so you can wire it directly into agents such as [elizaOS](https://github.com/elizaOS/eliza).
+
+### React development notes
+
+The production bundle lives in `linkedin_mcp_server/web/static` and is powered by ECMAScript modules that import React from [esm.sh](https://esm.sh). If you prefer a traditional toolchain, you can scaffold a Vite/Next.js project, point it at the same REST endpoints (`/api/sessions/*` and `/api/chat`), and either reverse proxy it to the FastAPI server or copy the compiled assets into the `static` directory.
+
+Key browser globals you can override when embedding the UI elsewhere:
+
+- `window.__LINKEDIN_MCP_API_BASE__` &mdash; Set to a fully qualified base URL if the API is served from a different host/port.
+- `window.__LINKEDIN_MCP_SESSION_TOKEN__` &mdash; Optionally pre-populate the chat with a known session token (the React app will continue to sync changes back to `localStorage`).
+
+This lightweight front end is ideal for prototyping multi-user scenarios without orchestrating a separate MCP instance per person.
+
 ## Features & Tool Status
 > [!TIP]
 > - **Session Tokens** (`create_session_with_cookie`): Exchange a LinkedIn `li_at` cookie for a reusable session token

@@ -10,9 +10,9 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from fastmcp import FastMCP
-from linkedin_scraper import Person
 
-from linkedin_mcp_server.error_handler import handle_tool_error, safe_get_driver
+from linkedin_mcp_server.error_handler import handle_tool_error
+from linkedin_mcp_server.services.linkedin_data import fetch_person_profile
 
 logger = logging.getLogger(__name__)
 

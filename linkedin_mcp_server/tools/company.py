@@ -10,9 +10,9 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from fastmcp import FastMCP
-from linkedin_scraper import Company
 
-from linkedin_mcp_server.error_handler import handle_tool_error, safe_get_driver
+from linkedin_mcp_server.error_handler import handle_tool_error
+from linkedin_mcp_server.services.linkedin_data import fetch_company_profile
 
 logger = logging.getLogger(__name__)
 
@@ -51,54 +51,10 @@ def register_company_tools(mcp: FastMCP) -> None:
             if get_employees:
                 logger.info("Fetching employees may take a while...")
 
-            company = Company(
-                linkedin_url,
-                driver=driver,
+            return fetch_company_profile(
+                company_name,
                 get_employees=get_employees,
-                close_on_complete=False,
+                session_token=session_token,
             )
-
-            # Convert showcase pages to structured dictionaries
-            showcase_pages: List[Dict[str, Any]] = [
-                {
-                    "name": page.name,
-                    "linkedin_url": page.linkedin_url,
-                    "followers": page.followers,
-                }
-                for page in company.showcase_pages
-            ]
-
-            # Convert affiliated companies to structured dictionaries
-            affiliated_companies: List[Dict[str, Any]] = [
-                {
-                    "name": affiliated.name,
-                    "linkedin_url": affiliated.linkedin_url,
-                    "followers": affiliated.followers,
-                }
-                for affiliated in company.affiliated_companies
-            ]
-
-            # Build the result dictionary
-            result: Dict[str, Any] = {
-                "name": company.name,
-                "about_us": company.about_us,
-                "website": company.website,
-                "phone": company.phone,
-                "headquarters": company.headquarters,
-                "founded": company.founded,
-                "industry": company.industry,
-                "company_type": company.company_type,
-                "company_size": company.company_size,
-                "specialties": company.specialties,
-                "showcase_pages": showcase_pages,
-                "affiliated_companies": affiliated_companies,
-                "headcount": company.headcount,
-            }
-
-            # Add employees if requested and available
-            if get_employees and company.employees:
-                result["employees"] = company.employees
-
-            return result
         except Exception as e:
             return handle_tool_error(e, "get_company_profile")

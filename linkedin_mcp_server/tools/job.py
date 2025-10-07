@@ -10,12 +10,15 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from fastmcp import FastMCP
-from linkedin_scraper import Job, JobSearch
 
 from linkedin_mcp_server.error_handler import (
     handle_tool_error,
     handle_tool_error_list,
-    safe_get_driver,
+)
+from linkedin_mcp_server.services.linkedin_data import (
+    fetch_job_details,
+    fetch_recommended_jobs,
+    search_jobs,
 )
 
 logger = logging.getLogger(__name__)
@@ -96,16 +99,6 @@ def register_job_tools(mcp: FastMCP) -> None:
             driver = safe_get_driver(session_token=session_token)
 
             logger.info("Getting recommended jobs")
-            job_search = JobSearch(
-                driver=driver,
-                close_on_complete=False,
-                scrape=True,  # Enable scraping to get recommended jobs
-                scrape_recommended_jobs=True,
-            )
-
-            if hasattr(job_search, "recommended_jobs") and job_search.recommended_jobs:
-                return [job.to_dict() for job in job_search.recommended_jobs]
-            else:
-                return []
+            return fetch_recommended_jobs(session_token=session_token)
         except Exception as e:
             return handle_tool_error_list(e, "get_recommended_jobs")
