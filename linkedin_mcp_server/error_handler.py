@@ -8,7 +8,7 @@ Eliminates code duplication while ensuring user-friendly error messages.
 """
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from linkedin_scraper.exceptions import (
     CaptchaRequiredError,
@@ -158,7 +158,7 @@ def convert_exception_to_list_response(
     return [convert_exception_to_response(exception, context)]
 
 
-def safe_get_driver():
+def safe_get_driver(session_token: Optional[str] = None):
     """
     Safely get or create a driver with proper error handling.
 
@@ -171,10 +171,16 @@ def safe_get_driver():
     from linkedin_mcp_server.authentication import ensure_authentication
     from linkedin_mcp_server.drivers.chrome import get_or_create_driver
 
-    # Get authentication first
-    authentication = ensure_authentication()
+    if session_token:
+        from linkedin_mcp_server.session_manager import get_session_cookie
+
+        authentication = get_session_cookie(session_token)
+        session_id = session_token
+    else:
+        authentication = ensure_authentication()
+        session_id = "default"
 
     # Create driver with authentication
-    driver = get_or_create_driver(authentication)
+    driver = get_or_create_driver(authentication, session_id=session_id)
 
     return driver

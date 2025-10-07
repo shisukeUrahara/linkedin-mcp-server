@@ -15,6 +15,7 @@ from fastmcp import FastMCP
 from linkedin_mcp_server.tools.company import register_company_tools
 from linkedin_mcp_server.tools.job import register_job_tools
 from linkedin_mcp_server.tools.person import register_person_tools
+from linkedin_mcp_server.tools.session import register_session_tools
 
 logger = logging.getLogger(__name__)
 
@@ -27,30 +28,13 @@ def create_mcp_server() -> FastMCP:
     register_person_tools(mcp)
     register_company_tools(mcp)
     register_job_tools(mcp)
-
-    # Register session management tool
-    @mcp.tool()
-    async def close_session() -> Dict[str, Any]:
-        """Close the current browser session and clean up resources."""
-        from linkedin_mcp_server.drivers.chrome import close_all_drivers
-
-        try:
-            close_all_drivers()
-            return {
-                "status": "success",
-                "message": "Successfully closed the browser session and cleaned up resources",
-            }
-        except Exception as e:
-            return {
-                "status": "error",
-                "message": f"Error closing browser session: {str(e)}",
-            }
+    register_session_tools(mcp)
 
     return mcp
 
 
 def shutdown_handler() -> None:
     """Clean up resources on shutdown."""
-    from linkedin_mcp_server.drivers.chrome import close_all_drivers
+    from linkedin_mcp_server.session_manager import close_all_sessions
 
-    close_all_drivers()
+    close_all_sessions()

@@ -31,14 +31,28 @@ Get this company profile for partnership discussions https://www.linkedin.com/co
 Suggest improvements for my CV to target this job posting https://www.linkedin.com/jobs/view/4252026496
 ```
 
+## Multi-user session flow
+
+1. Call `create_session_with_cookie` (or `create_session_with_credentials`) from your MCP client to register a LinkedIn login for a specific user. You can supply your own `session_token` or let the server generate one for you.
+2. Include the returned `session_token` when invoking tools like `get_person_profile`, `get_company_profile`, or `get_recommended_jobs` so that each user works inside their own browser session.
+3. Use `list_active_sessions` to monitor which session tokens currently have an attached browser.
+4. Call `close_session` with a token to tear down just that user's driver, or omit the token to close every active session.
+
+> [!IMPORTANT]
+> - Each session token manages a dedicated headless Chrome instance. Make sure you clean up idle sessions to release resources.
+> - The same LinkedIn cookie should only be active in one session at a time. If you reuse it concurrently, LinkedIn is likely to invalidate the cookie.
+> - For backward compatibility, omitting `session_token` when calling a tool will continue to use the legacy single-user configuration based on `LINKEDIN_COOKIE`.
+
 ## Features & Tool Status
 > [!TIP]
+> - **Session Tokens** (`create_session_with_cookie`): Exchange a LinkedIn `li_at` cookie for a reusable session token
+> - **Credential Login** (`create_session_with_credentials`): Log in headlessly with email/password to capture a session cookie
 > - **Profile Scraping** (`get_person_profile`): Get detailed information from a LinkedIn profile including work history, education, skills, and connections
 > - **Company Analysis** (`get_company_profile`): Extract comprehensive company information from a LinkedIn company profile name
 > - **Job Details** (`get_job_details`): Retrieve specific job posting details using LinkedIn job IDs
 > - **Job Search** (`search_jobs`): Search for jobs with filters like keywords and location
 > - **Recommended Jobs** (`get_recommended_jobs`): Get personalized job recommendations based on your profile
-> - **Session Management** (`close_session`): Properly close browser session and clean up resources
+> - **Lifecycle Tools** (`list_active_sessions`, `close_session`): Inspect or close active browser sessions by token
 
 > [!NOTE]
 > July 2025: All tools are currently functional and actively maintained. If you encounter any issues, please report them in the [GitHub issues](https://github.com/stickerdaniel/linkedin-mcp-server/issues).
@@ -145,7 +159,7 @@ docker run -it --rm \
 
 **Login issues:**
 - Ensure your LinkedIn cookie is set and correct
-- Make sure you have only one active LinkedIn session per cookie at a time. Trying to open multiple sessions with the same cookie will result in a cookie invalid error.
+- Use a unique `session_token` for each active user and avoid reusing the same cookie across simultaneous sessions. LinkedIn will invalidate cookies that are active in multiple browsers at once.
 - LinkedIn may require a login confirmation in the LinkedIn mobile app for --get-cookie
 - You might get a captcha challenge if you logged in a lot of times in a short period of time, then try again later or follow the [local setup instructions](#-local-setup-develop--contribute) to run the server manually in --no-headless mode where you can debug the login process (solve captcha manually)
 </details>
@@ -199,7 +213,7 @@ Copy the cookie from the output and set it as `LINKEDIN_COOKIE` in your client c
 
 **Login issues:**
 - Ensure your LinkedIn cookie is set and correct
-- Make sure you have only one active LinkedIn session per cookie at a time. Trying to open multiple sessions with the same cookie will result in a cookie invalid error.
+- Use a unique `session_token` for each active user and avoid reusing the same cookie across simultaneous sessions. LinkedIn will invalidate cookies that are active in multiple browsers at once.
 - LinkedIn may require a login confirmation in the LinkedIn mobile app for --get-cookie
 - You might get a captcha challenge if you logged in a lot of times in a short period of time, then try again later or follow the [local setup instructions](#-local-setup-develop--contribute) to run the server manually in --no-headless mode where you can debug the login process (solve captcha manually)
 </details>
@@ -329,7 +343,7 @@ uvx --from git+https://github.com/stickerdaniel/linkedin-mcp-server linkedin-mcp
 **Cookie issues:**
 - Ensure your LinkedIn cookie is set and correct
 - Cookie can be passed via `--cookie` flag or `LINKEDIN_COOKIE` environment variable
-- Make sure you have only one active LinkedIn session per cookie at a time
+- Avoid using the same cookie in multiple live sessions simultaneously—share unique `session_token`s per user instead.
 
 **Login issues:**
 - LinkedIn may require a login confirmation in the LinkedIn mobile app for --get-cookie
@@ -419,7 +433,7 @@ uv run -m linkedin_mcp_server --transport streamable-http --host 127.0.0.1 --por
 - Use `--no-headless` to see browser actions (captcha challenge, LinkedIn mobile app 2fa, ...)
 - Add `--no-lazy-init` to attempt to login to LinkedIn immediately instead of waiting for the first tool call
 - Add `--log-level DEBUG` to see more detailed logging
-- Make sure you have only one active LinkedIn session per cookie at a time. Trying to open multiple sessions with the same cookie will result in a cookie invalid error. E.g. if you have a logged in browser session with a docker container, you can't use the same cookie to login with the local setup while the docker container is running / session is not closed.
+- Avoid sharing a cookie across simultaneous sessions. If you need multiple environments, create separate `session_token`s (and ideally cookies) for each to prevent LinkedIn from invalidating them.
 
 **ChromeDriver issues:**
 - Ensure Chrome and ChromeDriver versions match

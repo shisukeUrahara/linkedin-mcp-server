@@ -7,7 +7,7 @@ with comprehensive filtering and structured data extraction.
 """
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from fastmcp import FastMCP
 from linkedin_scraper import Job, JobSearch
@@ -30,7 +30,9 @@ def register_job_tools(mcp: FastMCP) -> None:
     """
 
     @mcp.tool()
-    async def get_job_details(job_id: str) -> Dict[str, Any]:
+    async def get_job_details(
+        job_id: str, session_token: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Get job details for a specific job posting on LinkedIn
 
@@ -45,7 +47,7 @@ def register_job_tools(mcp: FastMCP) -> None:
             # Construct clean LinkedIn URL from job ID
             job_url = f"https://www.linkedin.com/jobs/view/{job_id}/"
 
-            driver = safe_get_driver()
+            driver = safe_get_driver(session_token=session_token)
 
             logger.info(f"Scraping job: {job_url}")
             job = Job(job_url, driver=driver, close_on_complete=False)
@@ -56,7 +58,9 @@ def register_job_tools(mcp: FastMCP) -> None:
             return handle_tool_error(e, "get_job_details")
 
     @mcp.tool()
-    async def search_jobs(search_term: str) -> List[Dict[str, Any]]:
+    async def search_jobs(
+        search_term: str, session_token: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """
         Search for jobs on LinkedIn using a search term.
 
@@ -67,7 +71,7 @@ def register_job_tools(mcp: FastMCP) -> None:
             List[Dict[str, Any]]: List of job search results
         """
         try:
-            driver = safe_get_driver()
+            driver = safe_get_driver(session_token=session_token)
 
             logger.info(f"Searching jobs: {search_term}")
             job_search = JobSearch(driver=driver, close_on_complete=False, scrape=False)
@@ -79,7 +83,9 @@ def register_job_tools(mcp: FastMCP) -> None:
             return handle_tool_error_list(e, "search_jobs")
 
     @mcp.tool()
-    async def get_recommended_jobs() -> List[Dict[str, Any]]:
+    async def get_recommended_jobs(
+        session_token: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
         """
         Get your personalized recommended jobs from LinkedIn
 
@@ -87,7 +93,7 @@ def register_job_tools(mcp: FastMCP) -> None:
             List[Dict[str, Any]]: List of recommended jobs
         """
         try:
-            driver = safe_get_driver()
+            driver = safe_get_driver(session_token=session_token)
 
             logger.info("Getting recommended jobs")
             job_search = JobSearch(

@@ -32,6 +32,18 @@
   },
   "tools": [
     {
+      "name": "create_session_with_cookie",
+      "description": "Register a LinkedIn li_at cookie and receive a reusable session token"
+    },
+    {
+      "name": "create_session_with_credentials",
+      "description": "Login with LinkedIn credentials to capture a cookie and create a session token"
+    },
+    {
+      "name": "list_active_sessions",
+      "description": "List managed session tokens and whether a driver is active"
+    },
+    {
       "name": "get_person_profile",
       "description": "Get detailed information from a LinkedIn profile including work history, education, skills, and connections"
     },
@@ -53,7 +65,7 @@
     },
     {
       "name": "close_session",
-      "description": "Properly close browser session and clean up resources"
+      "description": "Close a specific session by token or all sessions if none is provided"
     }
   ],
   "user_config": {
