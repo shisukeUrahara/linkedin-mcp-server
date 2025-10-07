@@ -195,6 +195,14 @@ def create_chrome_driver() -> webdriver.Chrome:
     return driver
 
 
+def _normalize_cookie_value(cookie: str) -> str:
+    """Normalize cookie input to raw li_at value."""
+
+    if cookie.startswith("li_at="):
+        return cookie.split("li_at=", 1)[1]
+    return cookie
+
+
 def login_with_cookie(driver: webdriver.Chrome, cookie: str) -> bool:
     """
     Log in to LinkedIn using session cookie.
@@ -222,9 +230,11 @@ def login_with_cookie(driver: webdriver.Chrome, cookie: str) -> bool:
         retry_count = 0
         max_retries = 1
 
+        cookie_value = _normalize_cookie_value(cookie)
+
         while retry_count <= max_retries:
             try:
-                actions.login(driver, cookie=cookie)
+                actions.login(driver, cookie=cookie_value)
                 # If we reach here without timeout, login attempt completed
                 break
             except TimeoutException:
@@ -358,7 +368,7 @@ def login_to_linkedin(driver: webdriver.Chrome, authentication: str) -> None:
         raise LoginTimeoutError(f"Login failed: {str(e)}")
 
 
-def get_or_create_driver(authentication: str) -> webdriver.Chrome:
+def get_or_create_driver(authentication: str, session_id: str = "default") -> webdriver.Chrome:
     """
     Get existing driver or create a new one and login.
 
@@ -372,8 +382,6 @@ def get_or_create_driver(authentication: str) -> webdriver.Chrome:
         DriverInitializationError: If driver creation fails
         Various login-related errors: If login fails
     """
-    session_id = "default"  # We use a single session for simplicity
-
     # Return existing driver if available
     if session_id in active_drivers:
         logger.info("Using existing Chrome WebDriver session")
@@ -411,29 +419,35 @@ def get_or_create_driver(authentication: str) -> webdriver.Chrome:
         raise e
 
 
+def close_driver(session_id: str) -> bool:
+    """Close a specific driver session if it exists."""
+
+    driver = active_drivers.pop(session_id, None)
+    if not driver:
+        return False
+
+    try:
+        logger.info(f"Closing Chrome WebDriver session: {session_id}")
+        driver.quit()
+        return True
+    except Exception as e:
+        logger.warning(f"Error closing driver {session_id}: {e}")
+        return False
+
+
 def close_all_drivers() -> None:
     """Close all active drivers and clean up resources."""
-    global active_drivers
 
-    for session_id, driver in active_drivers.items():
-        try:
-            logger.info(f"Closing Chrome WebDriver session: {session_id}")
-            driver.quit()
-        except Exception as e:
-            logger.warning(f"Error closing driver {session_id}: {e}")
+    session_ids = list(active_drivers.keys())
+    for session_id in session_ids:
+        close_driver(session_id)
 
-    active_drivers.clear()
     logger.info("All Chrome WebDriver sessions closed")
 
 
-def get_active_driver() -> Optional[webdriver.Chrome]:
-    """
-    Get the currently active driver without creating a new one.
+def get_active_driver(session_id: str = "default") -> Optional[webdriver.Chrome]:
+    """Get the currently active driver for a session without creating a new one."""
 
-    Returns:
-        Optional[webdriver.Chrome]: Active driver if available, None otherwise
-    """
-    session_id = "default"
     return active_drivers.get(session_id)
 
 

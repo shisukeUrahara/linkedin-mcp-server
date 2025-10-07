@@ -7,7 +7,7 @@ experience, education, skills, and contact details with proper error handling.
 """
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from fastmcp import FastMCP
 from linkedin_scraper import Person
@@ -26,7 +26,9 @@ def register_person_tools(mcp: FastMCP) -> None:
     """
 
     @mcp.tool()
-    async def get_person_profile(linkedin_username: str) -> Dict[str, Any]:
+    async def get_person_profile(
+        linkedin_username: str, session_token: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Get a specific person's LinkedIn profile.
 
@@ -40,7 +42,7 @@ def register_person_tools(mcp: FastMCP) -> None:
             # Construct clean LinkedIn URL from username
             linkedin_url = f"https://www.linkedin.com/in/{linkedin_username}/"
 
-            driver = safe_get_driver()
+            driver = safe_get_driver(session_token=session_token)
 
             logger.info(f"Scraping profile: {linkedin_url}")
             person = Person(linkedin_url, driver=driver, close_on_complete=False)

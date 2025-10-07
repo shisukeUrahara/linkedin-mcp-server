@@ -7,7 +7,7 @@ insights from LinkedIn with configurable depth and comprehensive error handling.
 """
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from fastmcp import FastMCP
 from linkedin_scraper import Company
@@ -27,7 +27,9 @@ def register_company_tools(mcp: FastMCP) -> None:
 
     @mcp.tool()
     async def get_company_profile(
-        company_name: str, get_employees: bool = False
+        company_name: str,
+        get_employees: bool = False,
+        session_token: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Get a specific company's LinkedIn profile.
@@ -43,7 +45,7 @@ def register_company_tools(mcp: FastMCP) -> None:
             # Construct clean LinkedIn URL from company name
             linkedin_url = f"https://www.linkedin.com/company/{company_name}/"
 
-            driver = safe_get_driver()
+            driver = safe_get_driver(session_token=session_token)
 
             logger.info(f"Scraping company: {linkedin_url}")
             if get_employees:
